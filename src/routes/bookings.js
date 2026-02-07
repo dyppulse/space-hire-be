@@ -9,9 +9,12 @@ import {
 
 const router = express.Router()
 
+// POST /bookings - Allow unauthenticated bookings
+router.post('/', createBooking)
+
+// All other routes require authentication
 router.use(authenticate)
 
-router.post('/', createBooking)
 router.get('/', getBookings)
 router.get('/:id', getBooking)
 router.patch('/:id/status', updateBookingStatus)

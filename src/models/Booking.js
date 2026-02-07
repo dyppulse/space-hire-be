@@ -5,7 +5,29 @@ const bookingSchema = new mongoose.Schema(
     guest: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Guest is required'],
+      required: false, // Guest is optional for unauthenticated bookings
+    },
+    guestName: {
+      type: String,
+      trim: true,
+    },
+    guestPhone: {
+      type: String,
+      trim: true,
+    },
+    guestEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: '',
+      validate: {
+        validator: function (value) {
+          // Only validate if email is provided (not empty)
+          if (!value || value.trim() === '') return true
+          return /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(value)
+        },
+        message: 'Please provide a valid email address',
+      },
     },
     space: {
       type: mongoose.Schema.Types.ObjectId,
@@ -22,11 +44,11 @@ const bookingSchema = new mongoose.Schema(
     },
     startTime: {
       type: String,
-      required: [true, 'Start time is required'],
+      default: '',
     },
     endTime: {
       type: String,
-      required: [true, 'End time is required'],
+      default: '',
     },
     guests: {
       type: Number,

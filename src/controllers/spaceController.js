@@ -1,6 +1,7 @@
 import { BadRequestError, NotFoundError, UnauthorizedError } from '../errors/index.js'
 import Space from '../models/Space.js'
 import Booking from '../models/Booking.js'
+import User from '../models/User.js'
 import { v2 as cloudinary } from 'cloudinary'
 
 export const getAllSpaces = async (req, res) => {
@@ -105,7 +106,21 @@ export const createSpace = async (req, res) => {
   const userId = req.user._id
 
   if (req.user.role !== 'host' && req.user.role !== 'admin') {
-    throw new UnauthorizedError('Only hosts can create spaces')
+    throw new UnauthorizedError('Only hosts and admins can create spaces')
+  }
+
+  // Admin can create spaces on behalf of hosts
+  let hostId = userId
+  if (req.user.role === 'admin' && req.body.hostId) {
+    // Verify the hostId exists and is a host
+    const host = await User.findById(req.body.hostId)
+    if (!host) {
+      throw new NotFoundError('Host not found')
+    }
+    if (host.role !== 'host') {
+      throw new BadRequestError('User is not a host')
+    }
+    hostId = req.body.hostId
   }
 
   const images = []
@@ -125,9 +140,12 @@ export const createSpace = async (req, res) => {
     throw new BadRequestError('At least one image is required')
   }
 
+  // Prepare space data, excluding hostId from req.body if present
+  const { hostId: _, ...spaceBodyData } = req.body
+  
   const spaceData = {
-    ...req.body,
-    host: userId,
+    ...spaceBodyData,
+    host: hostId,
     images,
     pricePerHour: Number(req.body.pricePerHour),
     capacity: Number(req.body.capacity),
